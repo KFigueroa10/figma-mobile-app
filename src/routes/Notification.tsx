@@ -1,96 +1,80 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FiHome, FiGlobe, FiBookOpen, FiUsers, FiBell, FiLogOut, FiMoreVertical } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { FiBell, FiCheck, FiInbox } from 'react-icons/fi'
+import { fetchNotifications, markAsRead, markAllAsRead, type NotificationItem } from '@/lib/notifications'
 
 export default function Notification() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement | null>(null)
-  const nav = useNavigate()
+  const [items, setItems] = useState<NotificationItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Cerrar el dropdown de usuario al hacer click fuera
+  async function load() {
+    setLoading(true)
+    const data = await fetchNotifications()
+    setItems(data)
+    setLoading(false)
+  }
+
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    load()
   }, [])
 
+  async function onMarkRead(id: string) {
+    await markAsRead(id)
+    load()
+  }
+
+  async function onMarkAll() {
+    await markAllAsRead()
+    load()
+  }
+
   return (
-    <div className="relative w-full min-h-screen overflow-hidden">
-      {/* Fondo de pantalla */}
-      <img
-        src="src/img/fondo3.0.png"
-        alt="Fondo"
-        className="absolute inset-0 w-full h-full object-cover -z-10"
-      />
-      {/* Logo en la esquina superior derecha */}
-      <img
-        src="src/img/logo.png"
-        alt="Logo"
-        className="absolute top-4 right-8 sm:right-12 w-48 h-48 sm:w-56 sm:h-56 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-40"
-      />
-
-      {/* Botón menú */}
-      <button
-        className="absolute top-6 left-6 text-white text-3xl z-50"
-        onClick={() => setMenuOpen(!menuOpen)}
-      >
-        ☰
-      </button>
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-full w-72 bg-slate-900 rounded-br-[45px] z-30 transform transition-transform duration-300 ${
-          menuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Menu items */}
-        <div className="absolute left-[82px] top-[115px] text-white text-base font-['Phetsarath'] flex items-center gap-3 cursor-pointer" onClick={() => nav('/home')}><FiHome className="text-xl text-white" aria-hidden="true"/>Inicio</div>
-        <div className="absolute left-[82px] top-[178px] text-white text-base font-['Phetsarath'] flex items-center gap-3 cursor-pointer" onClick={() => nav('/translator')}><FiGlobe className="text-xl text-white" aria-hidden="true"/>Traductor</div>
-        <div className="absolute left-[78px] top-[243px] text-white text-base font-['Phetsarath'] flex items-center gap-3 cursor-pointer" onClick={() => nav('/learning')}><FiBookOpen className="text-xl text-white" aria-hidden="true"/>Aprendizaje</div>
-        <div className="absolute left-[79px] top-[310px] text-white text-base font-['Phetsarath'] flex items-center gap-3 cursor-pointer" onClick={() => nav('/community')}><FiUsers className="text-xl text-white" aria-hidden="true"/>Comunidad</div>
-        <div className="absolute left-[78px] top-[379px] text-white text-base font-['Phetsarath'] flex items-center gap-3 cursor-pointer" onClick={() => nav('/notification')}><FiBell className="text-xl text-white" aria-hidden="true"/>Notificación</div>
-
-        {/* Panel de usuario */}
-        <div ref={userMenuRef} className="absolute left-6 bottom-6 w-56 z-40">
-          <div className="bg-slate-800 rounded-lg flex items-center justify-between px-2 py-1">
-            <div className="flex items-center gap-3">
-              <img src="src/img/k.png" alt="avatar" className="w-10 h-10 rounded-full object-cover" />
-              <div>
-                <div className="text-white font-bold">usuario</div>
-                <div className="text-gray-300 text-xs">usuario@example.com</div>
-              </div>
-            </div>
-            <div className="relative">
-              <button
-                aria-haspopup="true"
-                aria-expanded={userMenuOpen}
-                onClick={() => setUserMenuOpen(v => !v)}
-                className="p-2 rounded-md text-white hover:bg-slate-700"
-                title="Más opciones"
-              >
-                <FiMoreVertical className="w-5 h-5" />
-              </button>
-              {userMenuOpen && (
-                <div className="absolute right-0 bottom-12 w-44 bg-slate-800 rounded-md shadow-lg overflow-hidden">
-                  <button className="w-full text-left px-4 py-2 text-white hover:bg-slate-700" onClick={() => { setUserMenuOpen(false) }}>Perfil</button>
-                  <button className="w-full text-left px-4 py-2 text-white hover:bg-slate-700" onClick={() => { setUserMenuOpen(false) }}>Configuración</button>
-                  <button className="w-full text-left px-4 py-2 text-red-400 hover:bg-slate-700" onClick={() => { localStorage.removeItem('authed'); nav('/welcome') }}>Cerrar sesión</button>
-                </div>
-              )}
-            </div>
-          </div>
+    <div className="max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-white text-2xl font-bold">Notificaciones</h1>
+          <p className="text-white/80 text-sm">Mensajes sobre tu progreso y tablero</p>
         </div>
-      </aside>
-
-      {/* Contenido para Notificación */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen">
-        <h1 className="text-white text-4xl font-bold">Notificación</h1>
+        <Button onClick={onMarkAll} variant="secondary" className="bg-white/90 hover:bg-white text-gray-900 border border-white/60">
+          <FiCheck className="mr-2" /> Marcar todo como leído
+        </Button>
       </div>
+
+      <Card className="bg-gray-900/60 backdrop-blur-md border border-white/10 text-white rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2"><FiBell /> Bandeja</CardTitle>
+          <CardDescription className="text-white/80">Últimas actividades y recordatorios</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-white/80">Cargando...</div>
+          ) : items.length === 0 ? (
+            <div className="flex items-center gap-2 text-white/70"><FiInbox/> No tienes notificaciones</div>
+          ) : (
+            <ScrollArea className="max-h-[60vh] pr-2">
+              <ul className="space-y-3">
+                {items.map((n) => (
+                  <li key={n.id} className={`p-4 rounded-xl border ${n.read ? 'border-white/5 bg-white/5' : 'border-blue-500/30 bg-blue-500/10'} `}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm uppercase tracking-wide text-white/60">{n.type}</div>
+                        <div className="font-semibold text-white">{n.title}</div>
+                        <div className="text-white/80 text-sm mt-1">{n.message}</div>
+                        <div className="text-white/60 text-xs mt-2">{new Date(n.createdAt).toLocaleString()}</div>
+                      </div>
+                      {!n.read && (
+                        <Button size="sm" onClick={() => onMarkRead(n.id)} className="bg-blue-600 hover:bg-blue-700">Marcar leído</Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

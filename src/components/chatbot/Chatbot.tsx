@@ -61,9 +61,9 @@ export function Chatbot() {
   };
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-120px)] p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="grid md:grid-cols-3 gap-6 h-full min-h-0 p-4 md:p-6 max-w-7xl mx-auto">
       {/* Panel principal del chat */}
-      <div className="md:col-span-2 flex flex-col h-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-lg overflow-hidden relative z-10">
+      <div className="md:col-span-2 flex flex-col h-full min-h-0 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-lg overflow-hidden relative z-10">
         {/* Encabezado */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-900">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat con el tutor</h2>
