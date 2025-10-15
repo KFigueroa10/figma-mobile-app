@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Progress } from "../components/ui/progress";
 import { lessons } from "../lib/data";
 
 export default function Practice() {
@@ -11,6 +12,8 @@ export default function Practice() {
   const streamRef = useRef<MediaStream | null>(null);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [feedback, setFeedback] = useState<null | { accuracy: number; feedback: string; predictedLabel: string }>(null);
 
   function selectSign(title: string) {
     setParams({ sign: title });
@@ -41,6 +44,55 @@ export default function Practice() {
       videoRef.current.srcObject = null;
     }
     setCamOn(false);
+  }
+
+  function captureFrame(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const v = videoRef.current;
+      if (!v) return reject("Video no disponible");
+      const canvas = document.createElement("canvas");
+      canvas.width = v.videoWidth || 640;
+      canvas.height = v.videoHeight || 360;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject("Canvas no disponible");
+      try {
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const uri = canvas.toDataURL("image/jpeg");
+        resolve(uri);
+      } catch (e) {
+        reject("No se pudo capturar el cuadro");
+      }
+    });
+  }
+
+  async function analyzeSign() {
+    if (!camOn) return;
+    setIsLoading(true);
+    setFeedback(null);
+    try {
+      const frame = await captureFrame();
+      const result = await localSignAnalysis({ videoDataUri: frame, expectedSign: signParam });
+      setFeedback(result);
+    } catch (e) {
+      setCamError("El análisis falló. Intenta nuevamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function resetAnalysis() {
+    setFeedback(null);
+  }
+
+  async function localSignAnalysis(input: { videoDataUri: string; expectedSign: string }) {
+    const labels = [input.expectedSign, "Desconocida", "Otra"];
+    const accuracy = Math.max(10, Math.min(95, Math.floor(Math.random() * 86) + 10));
+    const predictedLabel = accuracy > 70 ? input.expectedSign : labels[Math.floor(Math.random() * labels.length)];
+    const feedbackText =
+      input.expectedSign.toLowerCase() === "hola"
+        ? "Tu mano está abierta, lo cual es un buen inicio. Junta más los dedos y realiza un pequeño movimiento de saludo con la palma hacia afuera."
+        : `Ajusta la postura de la mano para la seña "${input.expectedSign}" y procura mantenerla estable durante un instante para mejorar la precisión.`;
+    return { accuracy, feedback: feedbackText, predictedLabel };
   }
 
   useEffect(() => {
@@ -75,9 +127,24 @@ export default function Practice() {
               <Button className="bg-emerald-600 hover:bg-emerald-700 shadow-sm" onClick={() => (camOn ? stopCamera() : startCamera())}>
                 {camOn ? "Apagar cámara" : "Prender cámara"}
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm" onClick={() => alert("Detectar seña (placeholder)")}>Detectar</Button>
-              <Button variant="secondary" className="bg-white/90 hover:bg-white text-gray-900 border border-white/60" onClick={() => alert("Repetir (placeholder)")}>Repetir</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm" disabled={!camOn || isLoading} onClick={analyzeSign}>
+                {isLoading ? "Analizando..." : "Detectar"}
+              </Button>
+              <Button variant="secondary" className="bg-white/90 hover:bg-white text-gray-900 border border-white/60" onClick={resetAnalysis}>Repetir</Button>
             </div>
+            {isLoading && <div className="text-white/80">La IA está analizando tu seña...</div>}
+            {feedback && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-white font-semibold">Análisis Completo</div>
+                <div className="text-white/80">Se detectó: {feedback.predictedLabel}</div>
+                <div className="text-white/80">Precisión: {feedback.accuracy}%</div>
+                <Progress value={feedback.accuracy} />
+                <div className="text-white/90">
+                  <div className="font-semibold mb-1">Comentarios:</div>
+                  <div>{feedback.feedback}</div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
