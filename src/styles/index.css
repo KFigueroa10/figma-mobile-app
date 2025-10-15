@@ -1,0 +1,18 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { @apply text-white; }
+}
+.btn { @apply inline-flex items-center justify-center rounded-pill px-5 py-3 font-semibold transition active:scale-95; }
+.btn-primary { @apply btn bg-fig-violet text-white hover:bg-fig-purple; }
+.btn-ghost { @apply btn bg-white/10 text-white hover:bg-white/20; }
+.input { @apply w-full rounded-pill bg-white text-fig-ink px-4 py-3 outline-none; }
+.card { @apply rounded-3xl bg-white text-fig-ink shadow-xl; }
+.link { @apply underline underline-offset-4 hover:opacity-80; }
+.safe { @apply max-w-sm mx-auto w-[92%]; }
+.gradient-welcome { @apply bg-welcome-wave; }
+.gradient-chat { @apply bg-chat-gradient; }

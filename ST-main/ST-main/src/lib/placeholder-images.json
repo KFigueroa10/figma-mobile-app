@@ -1,0 +1,40 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hello",
+      "description": "A person signing 'hello'",
+      "imageUrl": "https://images.unsplash.com/photo-1644308312991-bc91e463ff93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2lnbmluZyUyMGhlbGxvfGVufDB8fHx8MTc1OTcyMTg5OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing hello"
+    },
+    {
+      "id": "thank-you",
+      "description": "A person signing 'thank you'",
+      "imageUrl": "https://images.unsplash.com/photo-1517076731070-13c65bcb2e86?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzaWduaW5nJTIwdGhhbmslMjB5b3V8ZW58MHx8fHwxNzU5NzIxODk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing thank you"
+    },
+    {
+      "id": "my-name-is",
+      "description": "A person signing 'my name is'",
+      "imageUrl": "https://images.unsplash.com/photo-1669565880960-8454650e6286?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzaWduaW5nJTIwbmFtZXxlbnwwfHx8fDE3NTk3MjE4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing name"
+    },
+    {
+      "id": "how-are-you",
+      "description": "A person signing 'how are you'",
+      "imageUrl": "https://images.unsplash.com/photo-1737777684076-f99a27a39ae1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzaWduaW5nJTIwcXVlc3Rpb258ZW58MHx8fHwxNzU5NzIxODk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing question"
+    },
+    {
+      "id": "help",
+      "description": "A person signing 'help'",
+      "imageUrl": "https://images.unsplash.com/photo-1733819109723-92a56f6872a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzaWduaW5nJTIwaGVscHxlbnwwfHx8fDE3NTk3MjE4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing help"
+    },
+    {
+      "id": "sorry",
+      "description": "A person signing 'sorry'",
+      "imageUrl": "https://images.unsplash.com/photo-1624498812392-9b2703e4b3ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzaWduaW5nJTIwc29ycnl8ZW58MHx8fHwxNzU5NzIxODk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "signing sorry"
+    }
+  ]
+}
