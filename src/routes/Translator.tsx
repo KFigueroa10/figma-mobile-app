@@ -1,12 +1,16 @@
+
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiHome, FiGlobe, FiBookOpen, FiUsers, FiBell, FiLogOut, FiMoreVertical } from 'react-icons/fi'
+import TlSenias from '../components/tlseñas'
 
 export default function Translator() {
+
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement | null>(null)
   const nav = useNavigate()
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
   // Cerrar el dropdown de usuario al hacer click fuera
   useEffect(() => {
@@ -18,6 +22,28 @@ export default function Translator() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  // Activar cámara automáticamente al cargar la página
+  useEffect(() => {
+    async function startCamera() {
+      try {
+        if (videoRef.current) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+      } catch (e) {
+        // Manejo de error: cámara no disponible
+      }
+    }
+    startCamera();
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden">
@@ -88,8 +114,12 @@ export default function Translator() {
       </aside>
 
       {/* Contenido para Traductor */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen">
-        <h1 className="text-white text-4xl font-bold">Traductor</h1>
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen gap-8">
+        <h1 className="text-white text-4xl font-bold mb-6">Traductor</h1>
+        {/* Traductor LESSA integrado */}
+        <div className="flex flex-col items-center gap-4 bg-white/10 p-6 rounded-2xl shadow-lg">
+          <TlSenias />
+        </div>
       </div>
     </div>
   )
