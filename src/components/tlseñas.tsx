@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import imgLoading1 from "../img/image-3-6.png";
+import imgLoading2 from "../img/image-4-7.png";
+import imgLoading3 from "../img/node-8.png";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
@@ -73,6 +76,7 @@ export default function TlSenias() {
   const [error, setError] = useState<string | null>(null);
   const [startRequested, setStartRequested] = useState(false);
   const [modelStatus, setModelStatus] = useState<string>("Cargando modelo...");
+  const [loadingImageIndex, setLoadingImageIndex] = useState(0);
 
   // Cargar modelo
   useEffect(() => {
@@ -100,6 +104,15 @@ export default function TlSenias() {
     }
     loadModel();
   }, []);
+
+  // Rotar imágenes de carga mientras loading sea true
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => {
+      setLoadingImageIndex((i) => (i + 1) % 3);
+    }, 1200);
+    return () => clearInterval(id);
+  }, [loading]);
 
   async function retestModel() {
     setModelStatus("Reintentando carga del modelo...");
@@ -289,7 +302,16 @@ export default function TlSenias() {
         </div>
       </div>
 
-      {loading && <div className="text-white/80">⏳ Cargando modelo y cámara...</div>}
+      {loading && (
+        <div className="flex flex-col items-center gap-2 text-white/80">
+          <img
+            src={[imgLoading1, imgLoading2, imgLoading3][loadingImageIndex]}
+            alt="Cargando"
+            className="w-24 h-24 object-contain animate-pulse"
+          />
+          <div>⏳ Cargando modelo y cámara...</div>
+        </div>
+      )}
 
       <div className="text-xs text-gray-400 mt-2 text-center max-w-md">
         Si la cámara no se activa, revisa los permisos del navegador y asegúrate de estar en localhost o https.
