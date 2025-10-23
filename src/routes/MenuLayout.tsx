@@ -14,6 +14,9 @@ import {
   FiUser,
   FiSettings
 } from 'react-icons/fi'
+import fondo from '@/img/fondo3.0.png'
+import logo from '@/img/logo.png'
+import avatar from '@/img/k.png'
 
 interface MenuLayoutProps {
   children?: React.ReactNode;
@@ -38,7 +41,7 @@ export default function MenuLayout({ children }: MenuLayoutProps) {
   }, [])
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden bg-cover bg-center" style={{ backgroundImage: 'url("src/img/fondo3.0.png")' }}>
+    <div className="relative w-full min-h-screen overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${fondo})` }}>
       <div className="flex h-full">
         {/* Botón menú */}
         <button 
@@ -57,7 +60,7 @@ export default function MenuLayout({ children }: MenuLayoutProps) {
           {/* Logo y título */}
           <div className="flex items-center justify-center py-6 border-b border-slate-700/50">
             <img 
-              src="src/img/logo.png" 
+              src={logo} 
               alt="Logo" 
               className="h-16 w-16 object-contain"
             />
@@ -160,7 +163,7 @@ export default function MenuLayout({ children }: MenuLayoutProps) {
             <div ref={userMenuRef} className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
                 <img 
-                  src="src/img/k.png" 
+                  src={avatar} 
                   alt="avatar" 
                   className="w-10 h-10 rounded-full border-2 border-slate-600 object-cover" 
                 />

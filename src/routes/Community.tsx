@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiHome, FiGlobe, FiBookOpen, FiUsers, FiBell, FiLogOut, FiMoreVertical } from 'react-icons/fi'
+import fondo from '@/img/fondo3.0.png'
+import logo from '@/img/logo.png'
+import avatar from '@/img/k.png'
 
 export default function Community() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -23,13 +26,13 @@ export default function Community() {
     <div className="relative w-full min-h-screen overflow-hidden">
       {/* Fondo de pantalla */}
       <img
-        src="src/img/fondo3.0.png"
+        src={fondo}
         alt="Fondo"
         className="absolute inset-0 w-full h-full object-cover -z-10"
       />
       {/* Logo en la esquina superior derecha */}
       <img
-        src="src/img/logo.png"
+        src={logo}
         alt="Logo"
         className="absolute top-4 right-8 sm:right-12 w-48 h-48 sm:w-56 sm:h-56 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-40"
       />
@@ -59,7 +62,7 @@ export default function Community() {
         <div ref={userMenuRef} className="absolute left-6 bottom-6 w-56 z-40">
           <div className="bg-slate-800 rounded-lg flex items-center justify-between px-2 py-1">
             <div className="flex items-center gap-3">
-              <img src="src/img/k.png" alt="avatar" className="w-10 h-10 rounded-full object-cover" />
+              <img src={avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
               <div>
                 <div className="text-white font-bold">usuario</div>
                 <div className="text-gray-300 text-xs">usuario@example.com</div>

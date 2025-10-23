@@ -16,7 +16,7 @@ export const Mascot: React.FC<MascotProps> = ({ className = '', useGif = false, 
     return (
       <div className={`w-32 h-32 flex items-center justify-center ${className}`}>
         <video
-          src={videoUrl ?? '/images/mascot.mp4'}
+          src={videoUrl ?? '/images/Live%20chatbot.mp4'}
           className="w-full h-full object-contain"
           autoPlay
           loop
@@ -32,7 +32,7 @@ export const Mascot: React.FC<MascotProps> = ({ className = '', useGif = false, 
     return (
       <div className={`w-32 h-32 flex items-center justify-center ${className}`}>
         <img
-          src={gifUrl ?? '/images/mascot.gif'}
+          src={gifUrl ?? '/images/Live%20chatbot.gif'}
           alt="Mascot"
           className="w-full h-full object-contain"
           onError={() => setImgError(true)}

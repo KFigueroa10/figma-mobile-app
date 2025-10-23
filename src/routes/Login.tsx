@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import welcome from '@/img/welcome.png'
+import logo from '@/img/logo.png'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -17,14 +19,14 @@ export default function Login() {
 
       {/* Fondo de pantalla completo */}
       <img
-        src="src/img/welcome.png"
+        src={welcome}
         alt="Fondo"
         className="absolute inset-0 w-full h-full object-cover -z-10"
       />
 
       {/* Logo en la esquina superior izquierda, más grande */}
       <img
-        src="src/img/logo.png"
+        src={logo}
         alt="Logo"
         className="w-56 h-56 sm:w-64 sm:h-64 absolute top-4 left-4 sm:top-6 sm:left-6"
       />

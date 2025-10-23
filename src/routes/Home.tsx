@@ -1,11 +1,12 @@
 import { FiEye, FiTarget, FiInfo } from 'react-icons/fi'
+import logo from '@/img/logo.png'
 
 export default function Home() {
   return (
     <div className="relative w-full px-4 md:px-6 py-8 md:py-10">
       {/* Logo fijo arriba a la derecha */}
       <img
-        src="src/img/logo.png"
+        src={logo}
         alt="Logo"
         className="absolute top-4 right-8 sm:right-12 w-32 h-32 sm:w-40 sm:h-40 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-40 pointer-events-none"
       />

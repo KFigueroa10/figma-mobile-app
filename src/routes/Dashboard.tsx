@@ -6,6 +6,7 @@ import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Mascot } from '../components/mascot/Mascot';
+import logo from '@/img/logo.png'
 
 // Mock data - replace with your actual data fetching logic
 const userProfile = {
@@ -115,7 +116,7 @@ export default function Dashboard() {
 
         <div className="space-y-8">
           <Card className="h-[300px] flex items-center justify-center bg-gray-900/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <img src="src/img/logo.png" alt="Logo" className="w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow" />
+            <img src={logo} alt="Logo" className="w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow" />
           </Card>
           
           <Card className="bg-gray-900/60 backdrop-blur-md border border-white/10 text-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.35)]">

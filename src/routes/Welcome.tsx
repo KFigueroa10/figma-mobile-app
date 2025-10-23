@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import welcome from '@/img/welcome.png'
 
 export default function Welcome() {
   return (
@@ -10,7 +11,7 @@ export default function Welcome() {
       <img 
         data-layer="KMK-Photoroom 1" 
         className="KmkPhotoroom1 absolute inset-0 w-full h-full object-cover" 
-        src="src/img/welcome.png" 
+        src={welcome} 
         alt="Fondo"
       />
 

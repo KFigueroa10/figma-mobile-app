@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { lessons } from "../lib/data";
+import logo from '@/img/logo.png'
 
 export default function Practice() {
   const [params, setParams] = useSearchParams();
@@ -117,7 +118,7 @@ export default function Practice() {
               <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               {!camOn && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <img src="src/img/logo.png" alt="Logo" className="w-28 h-28 object-contain drop-shadow" />
+                  <img src={logo} alt="Logo" className="w-28 h-28 object-contain drop-shadow" />
                   <div className="text-white/80">Activa la cámara para practicar</div>
                 </div>
               )}
