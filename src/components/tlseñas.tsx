@@ -72,6 +72,7 @@ export default function TlSenias() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startRequested, setStartRequested] = useState(false);
+  const [modelStatus, setModelStatus] = useState<string>("Cargando modelo...");
 
   // Cargar modelo
   useEffect(() => {
@@ -90,13 +91,28 @@ export default function TlSenias() {
         const model = await tf.loadLayersModel(MODEL_PATH);
         modelRef.current = model;
         console.log("✅ Modelo LESSA cargado exitosamente");
+        setModelStatus("Modelo cargado correctamente");
       } catch (err) {
         console.error("❌ Error al cargar el modelo:", err);
         setError("No se pudo cargar el modelo LESSA.");
+        setModelStatus("Error al cargar el modelo. Revisa rutas y red.");
       }
     }
     loadModel();
   }, []);
+
+  async function retestModel() {
+    setModelStatus("Reintentando carga del modelo...");
+    try {
+      const tmp = await tf.loadLayersModel(MODEL_PATH);
+      tmp?.dispose();
+      setModelStatus("Modelo cargado correctamente");
+      console.log("🔁 Reprueba de modelo: OK");
+    } catch (e) {
+      console.error("🔁 Reprueba de modelo: ERROR", e);
+      setModelStatus("Error al cargar el modelo. Ver consola para detalles.");
+    }
+  }
 
   // Configurar MediaPipe y camara para agregar efectos a la camara
 
@@ -257,6 +273,12 @@ export default function TlSenias() {
             )}
           </div>
           {error && <div className="mt-2 text-red-400 text-sm font-semibold text-center w-full">{error}</div>}
+          <div className="mt-2 text-emerald-300 text-xs text-center w-full">{modelStatus}</div>
+          <div className="mt-2 w-full flex justify-center">
+            <button onClick={retestModel} className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">
+              Reprobar modelo
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 items-center">
