@@ -22,7 +22,7 @@ const DRAWING_SOURCES = [
 ];
 
 // Ruta de de donde esta el mdoelo 
-const MODEL_PATH = "public\models\lessa_model_incremental.json";
+const MODEL_PATH = "/models/lessa_model_incremental.json";
 
 // Función auxiliar para cargar scripts externos
 function loadScript(src: string): Promise<void> {
