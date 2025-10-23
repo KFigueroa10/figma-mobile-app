@@ -79,43 +79,74 @@ export default function TlSenias() {
   const [loadingImageIndex, setLoadingImageIndex] = useState(0);
   const [progress, setProgress] = useState<number>(0);
 
-  // Cargar modelo
+  // Cargar modelo y configurar cámara
   useEffect(() => {
-    async function loadModel() {
+    let isMounted = true;
+    
+    async function initialize() {
       try {
+        // 1. Inicializar TF.js
         try {
           await tf.setBackend("webgl");
-        } catch {}
-        await tf.ready();
-        setProgress(25);
-        if (tf.getBackend() !== "webgl") {
-          try {
-            await tf.setBackend("cpu");
-            await tf.ready();
-          } catch {}
+        } catch (e) {
+          console.warn("WebGL no disponible, usando CPU");
+          await tf.setBackend("cpu");
         }
-        const model = await tf.loadLayersModel(MODEL_PATH);
-        modelRef.current = model;
-        console.log("✅ Modelo LESSA cargado exitosamente");
-        setModelStatus("Modelo cargado correctamente");
-        setProgress(50);
-      } catch (err) {
-        console.error("❌ Error al cargar el modelo:", err);
-        setError("No se pudo cargar el modelo LESSA.");
-        setModelStatus("Error al cargar el modelo. Revisa rutas y red.");
+        await tf.ready();
+        if (isMounted) setProgress(25);
+
+        // 2. Cargar el modelo
+        try {
+          const model = await tf.loadLayersModel(MODEL_PATH);
+          if (isMounted) {
+            modelRef.current = model;
+            console.log("✅ Modelo LESSA cargado exitosamente");
+            setModelStatus("Modelo cargado correctamente");
+            setProgress(50);
+          }
+        } catch (err) {
+          console.error("❌ Error al cargar el modelo:", err);
+          if (isMounted) {
+            setError("No se pudo cargar el modelo LESSA.");
+            setModelStatus("Error al cargar el modelo. Revisa la consola.");
+          }
+          return;
+        }
+
+        // 3. Cargar dependencias de MediaPipe
+        try {
+          await loadScriptWithFallback(CAMERA_SOURCES);
+          await loadScriptWithFallback(DRAWING_SOURCES);
+          await loadScriptWithFallback(HANDS_SOURCES);
+          if (isMounted) setProgress(75);
+        } catch (e) {
+          console.error("Error cargando dependencias:", e);
+          if (isMounted) {
+            setError("Error cargando componentes de cámara.");
+            setLoading(false);
+          }
+          return;
+        }
+
+        // 4. Iniciar cámara automáticamente
+        if (isMounted) {
+          setStartRequested(true);
+        }
+      } catch (e) {
+        console.error("Error en inicialización:", e);
+        if (isMounted) {
+          setError("Error al inicializar. Por favor recarga la página.");
+          setLoading(false);
+        }
       }
     }
-    loadModel();
-  }, []);
 
-  // Rotar imágenes de carga mientras loading sea true
-  useEffect(() => {
-    if (!loading) return;
-    const id = setInterval(() => {
-      setLoadingImageIndex((i) => (i + 1) % 3);
-    }, 1200);
-    return () => clearInterval(id);
-  }, [loading]);
+    initialize();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function retestModel() {
     setModelStatus("Reintentando carga del modelo...");
@@ -308,22 +339,45 @@ export default function TlSenias() {
       </div>
 
       {loading && (
-        <div className="flex flex-col items-center gap-4 text-white/80 w-full">
-          <div className="flex items-center justify-center gap-6">
-            <img src={imgLoading1} alt="img-1" style={{ width: 80, height: 80 }} className="object-contain rounded" />
-            <img src={imgLoading2} alt="img-2" style={{ width: 100, height: 80 }} className="object-contain rounded" />
-            <img src={imgLoading3} alt="img-3" style={{ width: 80, height: 80 }} className="object-contain rounded" />
+        <div className="flex flex-col items-center gap-6 p-6 bg-teal-900/70 rounded-xl w-full max-w-md">
+        <div className="flex items-center justify-center gap-6">
+          <img src={imgLoading1} alt="" style={{ width: 80, height: 80 }} className="object-contain rounded-lg shadow-lg" />
+          <img src={imgLoading2} alt="" style={{ width: 100, height: 80 }} className="object-contain rounded-lg shadow-lg" />
+          <img src={imgLoading3} alt="" style={{ width: 80, height: 80 }} className="object-contain rounded-lg shadow-lg" />
+        </div>
+        
+        <div className="w-full">
+          <div className="h-3 w-full rounded-full bg-teal-800/50 overflow-hidden">
+            <div
+              className="h-full bg-teal-400 transition-all duration-700 ease-out"
+              style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+            />
           </div>
-          <div className="w-full max-w-md">
-            <div className="h-2 w-full rounded-full bg-white/20 overflow-hidden">
-              <div
-                className="h-full bg-emerald-400 transition-all duration-500"
-                style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
-              />
-            </div>
-            <div className="text-center mt-1 text-sm font-semibold">{Math.round(progress)}%</div>
+          <div className="flex justify-between mt-2 text-sm">
+            <span className="text-teal-200">Iniciando...</span>
+            <span className="font-bold text-teal-100">{Math.round(progress)}%</span>
           </div>
         </div>
+        
+        <div className="text-center text-teal-100 text-sm mt-2">
+          {progress < 25 && "Inicializando componentes..."}
+          {progress >= 25 && progress < 50 && "Cargando modelo de IA..."}
+          {progress >= 50 && progress < 75 && "Preparando cámara..."}
+          {progress >= 75 && "¡Casi listo!"}
+        </div>
+        
+        {error && (
+          <div className="mt-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg text-red-100 text-sm">
+            {error}
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-1 bg-red-600 hover:bg-red-500 rounded-md text-white text-sm font-medium block mx-auto"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+      </div>
       )}
 
       <div className="text-xs text-gray-400 mt-2 text-center max-w-md">
