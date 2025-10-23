@@ -77,6 +77,7 @@ export default function TlSenias() {
   const [startRequested, setStartRequested] = useState(false);
   const [modelStatus, setModelStatus] = useState<string>("Cargando modelo...");
   const [loadingImageIndex, setLoadingImageIndex] = useState(0);
+  const [progress, setProgress] = useState<number>(0);
 
   // Cargar modelo
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function TlSenias() {
           await tf.setBackend("webgl");
         } catch {}
         await tf.ready();
+        setProgress(25);
         if (tf.getBackend() !== "webgl") {
           try {
             await tf.setBackend("cpu");
@@ -96,6 +98,7 @@ export default function TlSenias() {
         modelRef.current = model;
         console.log("✅ Modelo LESSA cargado exitosamente");
         setModelStatus("Modelo cargado correctamente");
+        setProgress(50);
       } catch (err) {
         console.error("❌ Error al cargar el modelo:", err);
         setError("No se pudo cargar el modelo LESSA.");
@@ -149,6 +152,7 @@ export default function TlSenias() {
         await loadScriptWithFallback(CAMERA_SOURCES);
         await loadScriptWithFallback(DRAWING_SOURCES);
         await loadScriptWithFallback(HANDS_SOURCES);
+        setProgress((p) => Math.max(p, 75));
 
         // @ts-ignore
         const Hands = window.Hands;
@@ -222,6 +226,7 @@ export default function TlSenias() {
                 console.log("🎥 Cámara iniciada correctamente");
                 setCameraReady(true);
                 setLoading(false);
+                setProgress(100);
                 setError(null);
               })
               .catch((e: any) => {
@@ -303,13 +308,21 @@ export default function TlSenias() {
       </div>
 
       {loading && (
-        <div className="flex flex-col items-center gap-2 text-white/80">
-          <img
-            src={[imgLoading1, imgLoading2, imgLoading3][loadingImageIndex]}
-            alt="Cargando"
-            className="w-24 h-24 object-contain animate-pulse"
-          />
-          <div>⏳ Cargando modelo y cámara...</div>
+        <div className="flex flex-col items-center gap-4 text-white/80 w-full">
+          <div className="flex items-center justify-center gap-6">
+            <img src={imgLoading1} alt="img-1" style={{ width: 80, height: 80 }} className="object-contain rounded" />
+            <img src={imgLoading2} alt="img-2" style={{ width: 100, height: 80 }} className="object-contain rounded" />
+            <img src={imgLoading3} alt="img-3" style={{ width: 80, height: 80 }} className="object-contain rounded" />
+          </div>
+          <div className="w-full max-w-md">
+            <div className="h-2 w-full rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full bg-emerald-400 transition-all duration-500"
+                style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+              />
+            </div>
+            <div className="text-center mt-1 text-sm font-semibold">{Math.round(progress)}%</div>
+          </div>
         </div>
       )}
 
