@@ -91,7 +91,8 @@ export default function TlSenias() {
         console.log("✅ Modelo LESSA cargado exitosamente");
       } catch (err) {
         console.error("❌ Error al cargar el modelo:", err);
-        setError("No se pudo cargar el modelo LESSA.");
+        console.error("Detalles del error:", err.message);
+        setError("No se pudo cargar el modelo LESSA. Ver consola para más detalles.");
       } finally {
         setTimeout(() => setLoading(false), 800);
       }
@@ -122,11 +123,15 @@ export default function TlSenias() {
         await loadScriptWithStatus(HANDS_SOURCES, setProgress, setStatusText);
 
         // @ts-ignore
-        const Hands = window.Hands;
+        const Hands = (window as any).Hands;
         // @ts-ignore
-        const Camera = window.Camera;
+        const Camera = (window as any).Camera;
         // @ts-ignore
-        const { drawConnectors, drawLandmarks, HAND_CONNECTIONS } = window;
+        const { drawConnectors, drawLandmarks, HAND_CONNECTIONS } = window as any;
+
+        if (!Hands) {
+          throw new Error("Hands no está disponible. Verifica que los scripts de MediaPipe se cargaron correctamente.");
+        }
 
         hands = new Hands({
           locateFile: (file: string) => `${HANDS_CDN}/${file}`,
