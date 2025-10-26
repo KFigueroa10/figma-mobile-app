@@ -14,7 +14,8 @@ const CAMERA_SOURCES = [ CAMERA_CDN, "https://unpkg.com/@mediapipe/camera_utils/
 const DRAWING_SOURCES = [ DRAWING_CDN, "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js" ];
 
 // Modelo
-const MODEL_PATH = "/public/models/lessa_model_incremental.json";
+const MODEL_PATH = "/models/lessa_model_incremental.json";
+
 
 
 function loadScript(src: string): Promise<void> {
