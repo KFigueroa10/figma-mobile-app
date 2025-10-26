@@ -3,28 +3,19 @@ import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
 
-// ✅ URLs fijas y estables de MediaPipe (con fallback)
+// URLs fijas de MediaPipe
 const HANDS_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240";
 const CAMERA_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675469240/camera_utils.js";
 const DRAWING_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675469240/drawing_utils.js";
 
-const HANDS_SOURCES = [
-  `${HANDS_CDN}/hands.js`,
-  "https://unpkg.com/@mediapipe/hands/hands.js",
-];
-const CAMERA_SOURCES = [
-  CAMERA_CDN,
-  "https://unpkg.com/@mediapipe/camera_utils/camera_utils.js",
-];
-const DRAWING_SOURCES = [
-  DRAWING_CDN,
-  "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js",
-];
+// Fallbacks por si falla un CDN
+const HANDS_SOURCES = [ `${HANDS_CDN}/hands.js`, "https://unpkg.com/@mediapipe/hands/hands.js" ];
+const CAMERA_SOURCES = [ CAMERA_CDN, "https://unpkg.com/@mediapipe/camera_utils/camera_utils.js" ];
+const DRAWING_SOURCES = [ DRAWING_CDN, "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js" ];
 
-// Ruta de de donde esta el mdoelo 
+// Modelo
 const MODEL_PATH = "/models/lessa_model.json";
 
-// Función auxiliar para cargar scripts externos
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
@@ -37,17 +28,25 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-async function loadScriptWithFallback(sources: string[]): Promise<void> {
-  let lastError: any = null;
-  for (const src of sources) {
+async function loadScriptWithStatus(
+  sources: string[],
+  setProgress: (value: number) => void,
+  setStatusText: (text: string) => void
+): Promise<void> {
+  let step = 100 / sources.length;
+  for (let i = 0; i < sources.length; i++) {
+    const src = sources[i];
+    setStatusText(`Cargando ${src.split("/").pop()}...`);
     try {
       await loadScript(src);
+      setProgress((i + 1) * step);
+      setStatusText(`✅ ${src.split("/").pop()} cargado`);
       return;
     } catch (e) {
-      lastError = e;
+      console.warn(`Fallo al cargar ${src}`);
     }
   }
-  throw lastError ?? new Error("No se pudieron cargar los scripts externos");
+  throw new Error("No se pudieron cargar los scripts externos");
 }
 
 function preprocessLandmarks(landmarks: any[]): number[] {
@@ -71,55 +70,54 @@ export default function TlSenias() {
   const [letter, setLetter] = useState("—");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("");
   const [startRequested, setStartRequested] = useState(false);
 
   // Cargar modelo
   useEffect(() => {
     async function loadModel() {
       try {
-        try {
-          await tf.setBackend("webgl");
-        } catch {}
+        setStatusText("Cargando modelo LESSA...");
+        await tf.setBackend("webgl").catch(() => tf.setBackend("cpu"));
         await tf.ready();
-        if (tf.getBackend() !== "webgl") {
-          try {
-            await tf.setBackend("cpu");
-            await tf.ready();
-          } catch {}
-        }
+
         const model = await tf.loadLayersModel(MODEL_PATH);
         modelRef.current = model;
+        setProgress(100);
+        setStatusText("✅ Modelo LESSA cargado correctamente");
         console.log("✅ Modelo LESSA cargado exitosamente");
       } catch (err) {
         console.error("❌ Error al cargar el modelo:", err);
         setError("No se pudo cargar el modelo LESSA.");
+      } finally {
+        setTimeout(() => setLoading(false), 800);
       }
     }
     loadModel();
   }, []);
 
-  // Configurar MediaPipe y camara para agregar efectos a la camara
-
+  // Configurar cámara y MediaPipe
   useEffect(() => {
     let hands: any = null;
     let camera: any = null;
     let running = true;
 
     async function setup() {
-      setLoading(true);
       try {
-        // Verificar contexto seguro (HTTPS o localhost) para permisos de cámara
-        const isSecure = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        setLoading(true);
+        setProgress(0);
+
+        const isSecure = location.protocol === "https:" || location.hostname === "localhost";
         if (!isSecure) {
-          setError("La cámara requiere HTTPS o localhost.");
+          setError("⚠️ La cámara requiere HTTPS o localhost.");
           setLoading(false);
           return;
         }
 
-        // Cargar dependencias con fallback
-        await loadScriptWithFallback(CAMERA_SOURCES);
-        await loadScriptWithFallback(DRAWING_SOURCES);
-        await loadScriptWithFallback(HANDS_SOURCES);
+        await loadScriptWithStatus(CAMERA_SOURCES, setProgress, setStatusText);
+        await loadScriptWithStatus(DRAWING_SOURCES, setProgress, setStatusText);
+        await loadScriptWithStatus(HANDS_SOURCES, setProgress, setStatusText);
 
         // @ts-ignore
         const Hands = window.Hands;
@@ -128,27 +126,20 @@ export default function TlSenias() {
         // @ts-ignore
         const { drawConnectors, drawLandmarks, HAND_CONNECTIONS } = window;
 
-        console.log("Hands:", Hands);
-        console.log("Camera:", Camera);
-
-        if (!Hands || !Camera) throw new Error("MediaPipe no se cargó correctamente.");
-
         hands = new Hands({
           locateFile: (file: string) => `${HANDS_CDN}/${file}`,
         });
-
         hands.setOptions({
           maxNumHands: 1,
           modelComplexity: 1,
-          minDetectionConfidence: 0.6,
-          minTrackingConfidence: 0.6,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.7,
         });
 
         hands.onResults(async (results: any) => {
           const ctx = canvasRef.current?.getContext("2d");
           const video = videoRef.current;
           if (!ctx || !video) return;
-
           ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
           ctx.drawImage(results.image, 0, 0, canvasRef.current!.width, canvasRef.current!.height);
 
@@ -157,7 +148,6 @@ export default function TlSenias() {
             drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: "#00FFC6", lineWidth: 3 });
             drawLandmarks(ctx, landmarks, { color: "#FF4444", lineWidth: 1 });
 
-            // Predicción del modelo con preprocesamiento
             if (modelRef.current) {
               const input = preprocessLandmarks(landmarks);
               const tensor = tf.tensor2d([input], [1, 63]);
@@ -165,8 +155,7 @@ export default function TlSenias() {
               const probs = await prediction.data();
               const maxIndex = probs.indexOf(Math.max(...probs));
               if (maxIndex >= 0 && isFinite(maxIndex)) {
-                const detectedLetter = String.fromCharCode(65 + maxIndex);
-                setLetter(detectedLetter);
+                setLetter(String.fromCharCode(65 + maxIndex));
               }
               tensor.dispose();
               prediction.dispose();
@@ -176,41 +165,27 @@ export default function TlSenias() {
           }
         });
 
-        // ✅ Iniciar la cámara sólo si el usuario lo solicita
         if (startRequested) {
-          // Retraso leve para asegurar que el video está en el DOM
           setTimeout(() => {
             camera = new Camera(videoRef.current, {
-              onFrame: async () => {
-                if (running) await hands.send({ image: videoRef.current });
-              },
-              width: 600,
-              height: 450,
+              onFrame: async () => running && (await hands.send({ image: videoRef.current })),
+              width: 480,
+              height: 360,
             });
-            camera
-              .start()
-              .then(() => {
-                console.log("🎥 Cámara iniciada correctamente");
-                setCameraReady(true);
-                setLoading(false);
-                setError(null);
-              })
-              .catch((e: any) => {
-                console.error("Error al iniciar cámara:", e);
-                setError("No se pudo acceder a la cámara. Verifica permisos.");
-                setLoading(false);
-              });
-          }, 300);
-        } else {
-          setLoading(false);
+            camera.start().then(() => {
+              setCameraReady(true);
+              setError(null);
+              setStatusText("🎥 Cámara iniciada correctamente");
+            });
+          }, 500);
         }
       } catch (e) {
-        console.error("Error general de setup:", e);
-        setError("No se pudo cargar la cámara o los modelos. Verifica conexión y permisos.");
+        console.error(e);
+        setError("No se pudo iniciar la cámara o cargar los modelos.");
+      } finally {
         setLoading(false);
       }
     }
-
     setup();
 
     return () => {
@@ -221,57 +196,59 @@ export default function TlSenias() {
 
   return (
     <div className="w-full max-w-xl mx-auto bg-gray-900/80 rounded-2xl shadow-lg p-6 flex flex-col items-center gap-6">
-      <h2 className="text-2xl font-bold text-emerald-400 mb-2 drop-shadow">Traductor LESSA</h2>
+      <h2 className="text-2xl font-bold text-emerald-400 drop-shadow">Traductor LESSA</h2>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-center w-full">
-        <div className="flex flex-col items-center relative w-[600px] h-[450px]">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <video
-              ref={videoRef}
-              className="rounded-lg border border-emerald-400 shadow w-full h-full bg-black object-cover"
-              style={{ display: cameraReady ? "block" : "none" }}
-              autoPlay
-              playsInline
-              muted
-            />
-            <canvas
-              ref={canvasRef}
-              width={600}
-              height={450}
-              className="rounded-lg border border-emerald-400 shadow w-full h-full absolute top-0 left-0 pointer-events-none"
-              style={{ zIndex: 2 }}
-            />
-            {!cameraReady && (
-              <div className="absolute z-10 flex flex-col items-center">
-                <button
-                  onClick={() => {
-                    setError(null);
-                    setStartRequested(true);
-                    setLoading(true);
-                  }}
-                  className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold shadow hover:bg-emerald-600 transition"
-                >
-                  Iniciar Cámara
-                </button>
-              </div>
-            )}
+      {/* Contenedor de cámara */}
+      <div className="relative w-[480px] h-[360px]">
+        <video
+          ref={videoRef}
+          className="rounded-lg border border-emerald-400 shadow w-full h-full bg-black object-contain"
+          style={{ display: cameraReady ? "block" : "none" }}
+          autoPlay
+          playsInline
+          muted
+        />
+        <canvas
+          ref={canvasRef}
+          width={480}
+          height={360}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg border border-emerald-400"
+        />
+        {!cameraReady && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <button
+              onClick={() => {
+                setStartRequested(true);
+                setLoading(true);
+              }}
+              className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold shadow hover:bg-emerald-600 transition"
+            >
+              Iniciar Cámara
+            </button>
           </div>
-          {error && <div className="mt-2 text-red-400 text-sm font-semibold text-center w-full">{error}</div>}
-        </div>
-
-        <div className="flex flex-col gap-3 items-center">
-          <div className="bg-white/10 rounded-xl p-4 w-48 text-center">
-            <div className="text-emerald-400 font-bold text-lg mb-2">Letra detectada:</div>
-            <div className="letter text-7xl font-extrabold text-emerald-400 drop-shadow">{letter}</div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {loading && <div className="text-white/80">⏳ Cargando modelo y cámara...</div>}
+      {/* Barra de progreso */}
+      {loading && (
+        <div className="w-full mt-4 text-center">
+          <div className="text-sm text-emerald-300 mb-1">{statusText}</div>
+          <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
+            <div
+              className="bg-emerald-400 h-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
-      <div className="text-xs text-gray-400 mt-2 text-center max-w-md">
-        Si la cámara no se activa, revisa los permisos del navegador y asegúrate de estar en localhost o https.
+      {/* Resultado */}
+      <div className="mt-4 bg-white/10 rounded-xl p-4 w-48 text-center">
+        <div className="text-emerald-400 font-bold text-lg mb-2">Letra detectada:</div>
+        <div className="text-7xl font-extrabold text-emerald-400 drop-shadow">{letter}</div>
       </div>
+
+      {error && <div className="mt-3 text-red-400 text-sm font-semibold">{error}</div>}
     </div>
   );
 }
