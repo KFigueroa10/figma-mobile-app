@@ -184,8 +184,8 @@ export default function TlSenias() {
               onFrame: async () => {
                 if (running) await hands.send({ image: videoRef.current });
               },
-              width: 400,
-              height: 300,
+              width: 600,
+              height: 450,
             });
             camera
               .start()
@@ -224,7 +224,7 @@ export default function TlSenias() {
       <h2 className="text-2xl font-bold text-emerald-400 mb-2 drop-shadow">Traductor LESSA</h2>
 
       <div className="flex flex-col md:flex-row gap-4 items-center justify-center w-full">
-        <div className="flex flex-col items-center relative w-[400px] h-[300px]">
+        <div className="flex flex-col items-center relative w-[600px] h-[450px]">
           <div className="relative w-full h-full flex items-center justify-center">
             <video
               ref={videoRef}
@@ -236,8 +236,8 @@ export default function TlSenias() {
             />
             <canvas
               ref={canvasRef}
-              width={400}
-              height={300}
+              width={600}
+              height={450}
               className="rounded-lg border border-emerald-400 shadow w-full h-full absolute top-0 left-0 pointer-events-none"
               style={{ zIndex: 2 }}
             />
