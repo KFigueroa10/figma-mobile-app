@@ -8,10 +8,10 @@ const HANDS_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240"
 const CAMERA_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675469240/camera_utils.js";
 const DRAWING_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675469240/drawing_utils.js";
 
-// Fallbacks por si falla un CDN
-const HANDS_SOURCES = [ `${HANDS_CDN}/hands.js`, "https://unpkg.com/@mediapipe/hands/hands.js" ];
-const CAMERA_SOURCES = [ CAMERA_CDN, "https://unpkg.com/@mediapipe/camera_utils/camera_utils.js" ];
-const DRAWING_SOURCES = [ DRAWING_CDN, "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js" ];
+// Fallbacks por si falla un CDN (priorizando unpkg para mayor confiabilidad)
+const HANDS_SOURCES = [ "https://unpkg.com/@mediapipe/hands/hands.js", `${HANDS_CDN}/hands.js` ];
+const CAMERA_SOURCES = [ "https://unpkg.com/@mediapipe/camera_utils/camera_utils.js", CAMERA_CDN ];
+const DRAWING_SOURCES = [ "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js", DRAWING_CDN ];
 
 // Modelo
 const MODEL_PATH = "/models/lessa_model_incremental.json";
