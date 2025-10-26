@@ -16,6 +16,7 @@ const DRAWING_SOURCES = [ DRAWING_CDN, "https://unpkg.com/@mediapipe/drawing_uti
 // Modelo
 const MODEL_PATH = "/public/models/lessa_model_incremental.json";
 
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
