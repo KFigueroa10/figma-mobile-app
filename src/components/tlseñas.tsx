@@ -1,56 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-webgl";
-import "@tensorflow/tfjs-backend-cpu";
 
-// URLs fijas de MediaPipe
+// === URLs de MediaPipe ===
 const HANDS_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240";
-const CAMERA_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675469240/camera_utils.js";
-const DRAWING_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675469240/drawing_utils.js";
 
-// Fallbacks por si falla un CDN (priorizando unpkg para mayor confiabilidad)
-const HANDS_SOURCES = [ "https://unpkg.com/@mediapipe/hands/hands.js", `${HANDS_CDN}/hands.js` ];
-const CAMERA_SOURCES = [ "https://unpkg.com/@mediapipe/camera_utils/camera_utils.js", CAMERA_CDN ];
-const DRAWING_SOURCES = [ "https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js", DRAWING_CDN ];
-
-// Modelo
-const MODEL_PATH = "/models/lessa_model_incremental.json";
-
-
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject();
-    document.body.appendChild(script);
-  });
-}
-
-async function loadScriptWithStatus(
-  sources: string[],
-  setProgress: (value: number) => void,
-  setStatusText: (text: string) => void
-): Promise<void> {
-  let step = 100 / sources.length;
-  for (let i = 0; i < sources.length; i++) {
-    const src = sources[i];
-    setStatusText(`Cargando ${src.split("/").pop()}...`);
-    try {
-      await loadScript(src);
-      setProgress((i + 1) * step);
-      setStatusText(`✅ ${src.split("/").pop()} cargado`);
-      return;
-    } catch (e) {
-      console.warn(`Fallo al cargar ${src}`);
-    }
-  }
-  throw new Error("No se pudieron cargar los scripts externos");
-}
-
+// === Normalizar landmarks ===
 function preprocessLandmarks(landmarks: any[]): number[] {
   if (!landmarks || landmarks.length === 0) return new Array(63).fill(0);
   const base = landmarks[0];
@@ -63,149 +16,183 @@ function preprocessLandmarks(landmarks: any[]): number[] {
   return centered.map((v) => v / maxAbs);
 }
 
+// === Calcular distancia euclidiana promedio ===
+function euclideanDistance(arr1: number[], arr2: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < arr1.length; i++) {
+    sum += (arr1[i] - arr2[i]) ** 2;
+  }
+  return Math.sqrt(sum / arr1.length);
+}
+
+// === Cargar todos los JSON de señas ===
+async function loadSignDictionary() {
+  // 🔤 Cambia o expande según los JSON que tengas
+  const letters = ["A", "B", "C", "D", "E"];
+  const dict: Record<string, number[]> = {};
+
+  for (const l of letters) {
+    const res = await fetch(`/json/${l.toLowerCase()}.json`);
+    const data = await res.json();
+    // Convertimos a formato normalizado igual que MediaPipe
+    dict[l] = preprocessLandmarks(
+      data.landmarks.map(([x, y, z]: number[]) => ({ x, y, z }))
+    );
+  }
+
+  console.log("✅ Diccionario de señas cargado:", dict);
+  return dict;
+}
+
+// === Cargar scripts de MediaPipe dinámicamente ===
+async function loadMediaPipeScripts() {
+  const scripts = [
+    "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js",
+    "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js",
+    "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js",
+  ];
+
+  for (const src of scripts) {
+    if (!document.querySelector(`script[src="${src}"]`)) {
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(`❌ Error al cargar ${src}`);
+        document.body.appendChild(s);
+      });
+    }
+  }
+
+  await new Promise<void>((resolve) => {
+    const check = () => {
+      if ((window as any).Hands && (window as any).Camera) resolve();
+      else setTimeout(check, 300);
+    };
+    check();
+  });
+}
+
+// === Componente principal ===
 export default function TlSenias() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const modelRef = useRef<tf.LayersModel | null>(null);
 
-  const [cameraReady, setCameraReady] = useState(false);
   const [letter, setLetter] = useState("—");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState("");
+  const [dict, setDict] = useState<Record<string, number[]> | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
   const [startRequested, setStartRequested] = useState(false);
+  const [statusText, setStatusText] = useState("Esperando inicialización...");
+  const [loading, setLoading] = useState(true);
 
-  // Cargar modelo
+  // === Inicialización ===
   useEffect(() => {
-    async function loadModel() {
+    async function init() {
       try {
-        setStatusText("Cargando modelo LESSA...");
-        await tf.setBackend("webgl").catch(() => tf.setBackend("cpu"));
-        await tf.ready();
+        setStatusText("Cargando MediaPipe...");
+        await loadMediaPipeScripts();
 
-        const model = await tf.loadLayersModel(MODEL_PATH);
-        modelRef.current = model;
-        setProgress(100);
-        setStatusText("✅ Modelo LESSA cargado correctamente");
-        console.log("✅ Modelo LESSA cargado exitosamente");
+        setStatusText("Cargando señas de referencia...");
+        const dictionary = await loadSignDictionary();
+        setDict(dictionary);
+
+        setStatusText("✅ Todo listo, puedes iniciar la cámara.");
       } catch (err) {
-        console.error("❌ Error al cargar el modelo:", err);
-        console.error("Detalles del error:", err.message);
-        setError("No se pudo cargar el modelo LESSA. Ver consola para más detalles.");
+        console.error("Error inicializando:", err);
+        setStatusText("❌ Error al inicializar componentes");
       } finally {
-        setTimeout(() => setLoading(false), 800);
+        setLoading(false);
       }
     }
-    loadModel();
+    init();
   }, []);
 
-  // Configurar cámara y MediaPipe
+  // === Configurar MediaPipe Hands y la cámara ===
   useEffect(() => {
-    let hands: any = null;
+    if (!dict || !startRequested) return;
+
     let camera: any = null;
+    let hands: any = null;
     let running = true;
 
     async function setup() {
       try {
-        setLoading(true);
-        setProgress(0);
-
-        const isSecure = location.protocol === "https:" || location.hostname === "localhost";
-        if (!isSecure) {
-          setError("⚠️ La cámara requiere HTTPS o localhost.");
-          setLoading(false);
-          return;
-        }
-
-        await loadScriptWithStatus(CAMERA_SOURCES, setProgress, setStatusText);
-        await loadScriptWithStatus(DRAWING_SOURCES, setProgress, setStatusText);
-        await loadScriptWithStatus(HANDS_SOURCES, setProgress, setStatusText);
-
-        // @ts-ignore
         const Hands = (window as any).Hands;
-        // @ts-ignore
         const Camera = (window as any).Camera;
-        // @ts-ignore
-        const { drawConnectors, drawLandmarks, HAND_CONNECTIONS } = window as any;
-
-        if (!Hands) {
-          throw new Error("Hands no está disponible. Verifica que los scripts de MediaPipe se cargaron correctamente.");
-        }
+        const { drawConnectors, drawLandmarks, HAND_CONNECTIONS } = (window as any);
 
         hands = new Hands({
           locateFile: (file: string) => `${HANDS_CDN}/${file}`,
         });
+
         hands.setOptions({
           maxNumHands: 1,
           modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6,
         });
 
-        hands.onResults(async (results: any) => {
+        hands.onResults((results: any) => {
           const ctx = canvasRef.current?.getContext("2d");
           const video = videoRef.current;
           if (!ctx || !video) return;
+
           ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
           ctx.drawImage(results.image, 0, 0, canvasRef.current!.width, canvasRef.current!.height);
 
-          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+          if (results.multiHandLandmarks?.length) {
             const landmarks = results.multiHandLandmarks[0];
             drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: "#00FFC6", lineWidth: 3 });
             drawLandmarks(ctx, landmarks, { color: "#FF4444", lineWidth: 1 });
 
-            if (modelRef.current) {
-              const input = preprocessLandmarks(landmarks);
-              const tensor = tf.tensor2d([input], [1, 63]);
-              const prediction = modelRef.current.predict(tensor) as tf.Tensor;
-              const probs = await prediction.data();
-              const maxIndex = probs.indexOf(Math.max(...probs));
-              if (maxIndex >= 0 && isFinite(maxIndex)) {
-                setLetter(String.fromCharCode(65 + maxIndex));
+            // Procesar landmarks actuales
+            const normalized = preprocessLandmarks(landmarks);
+            let bestMatch = null;
+            let bestDistance = Infinity;
+
+            for (const [key, refLandmarks] of Object.entries(dict)) {
+              const dist = euclideanDistance(normalized, refLandmarks);
+              if (dist < bestDistance) {
+                bestDistance = dist;
+                bestMatch = key;
               }
-              tensor.dispose();
-              prediction.dispose();
             }
+
+            if (bestMatch && bestDistance < 0.25) setLetter(bestMatch);
+            else setLetter("—");
           } else {
             setLetter("—");
           }
         });
 
-        if (startRequested) {
-          setTimeout(() => {
-            camera = new Camera(videoRef.current, {
-              onFrame: async () => running && (await hands.send({ image: videoRef.current })),
-              width: 480,
-              height: 360,
-            });
-            camera.start().then(() => {
-              setCameraReady(true);
-              setError(null);
-              setStatusText("🎥 Cámara iniciada correctamente");
-            });
-          }, 500);
-        }
-      } catch (e) {
-        console.error(e);
-        setError("No se pudo iniciar la cámara o cargar los modelos.");
-      } finally {
-        setLoading(false);
+        camera = new Camera(videoRef.current, {
+          onFrame: async () => running && (await hands.send({ image: videoRef.current })),
+          width: 480,
+          height: 360,
+        });
+
+        await camera.start();
+        setCameraReady(true);
+        setStatusText("🎥 Cámara activa");
+      } catch (err) {
+        console.error("Error configurando cámara:", err);
+        setStatusText("❌ Error iniciando cámara");
       }
     }
-    setup();
 
+    setup();
     return () => {
       running = false;
       if (camera && camera.stop) camera.stop();
     };
-  }, [startRequested]);
+  }, [dict, startRequested]);
 
   return (
     <div className="w-full max-w-xl mx-auto bg-gray-900/80 rounded-2xl shadow-lg p-6 flex flex-col items-center gap-6">
-      <h2 className="text-2xl font-bold text-emerald-400 drop-shadow">Traductor LESSA</h2>
+      <h2 className="text-2xl font-bold text-emerald-400 drop-shadow">Traductor LESSA (Lookup)</h2>
 
-      {/* Contenedor de cámara */}
+      {/* === Cámara === */}
       <div className="relative w-[480px] h-[360px]">
         <video
           ref={videoRef}
@@ -224,10 +211,7 @@ export default function TlSenias() {
         {!cameraReady && (
           <div className="absolute inset-0 flex items-center justify-center">
             <button
-              onClick={() => {
-                setStartRequested(true);
-                setLoading(true);
-              }}
+              onClick={() => setStartRequested(true)}
               className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold shadow hover:bg-emerald-600 transition"
             >
               Iniciar Cámara
@@ -236,26 +220,14 @@ export default function TlSenias() {
         )}
       </div>
 
-      {/* Barra de progreso */}
-      {loading && (
-        <div className="w-full mt-4 text-center">
-          <div className="text-sm text-emerald-300 mb-1">{statusText}</div>
-          <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
-            <div
-              className="bg-emerald-400 h-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
+      {/* === Estado === */}
+      <div className="mt-4 text-emerald-300 text-sm text-center">{statusText}</div>
 
-      {/* Resultado */}
+      {/* === Resultado === */}
       <div className="mt-4 bg-white/10 rounded-xl p-4 w-48 text-center">
         <div className="text-emerald-400 font-bold text-lg mb-2">Letra detectada:</div>
         <div className="text-7xl font-extrabold text-emerald-400 drop-shadow">{letter}</div>
       </div>
-
-      {error && <div className="mt-3 text-red-400 text-sm font-semibold">{error}</div>}
     </div>
   );
 }
