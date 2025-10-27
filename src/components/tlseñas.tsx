@@ -181,7 +181,7 @@ export default function TlSenias() {
 
   return (
     <div className="w-full max-w-xl mx-auto bg-gray-900/80 rounded-2xl shadow-lg p-6 flex flex-col items-center gap-6">
-      <h2 className="text-2xl font-bold text-emerald-400 drop-shadow">Traductor LESSA (sin modelo)</h2>
+      <h2 className="text-2xl font-bold text-emerald-400 drop-shadow">Traductor de Alfabeto de señas</h2>
 
       {/* Cámara */}
       <div className="relative w-[480px] h-[360px]">
