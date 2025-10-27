@@ -14,6 +14,7 @@ import Learn from './routes/Learn'
 import Practice from './routes/Practice'
 import Community from './routes/Community'
 import Notification from './routes/Notification'
+import VozASena from './routes/VozASena'
 
 // Componente de diseño para rutas protegidas
 const ProtectedLayout = () => {
@@ -44,6 +45,7 @@ function AnimatedRoutes(){
           <Route path="/learning" element={<Learn />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/translator" element={<Translator />} />
+          <Route path="/voz-a-sena" element={<VozASena />} />
           <Route path="/chatbot" element={<Chat />} />
           <Route path="/community" element={<Community />} />
           <Route path="/notification" element={<Notification />} />

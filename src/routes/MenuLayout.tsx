@@ -1,18 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { 
-  FiHome, 
-  FiGlobe, 
-  FiBookOpen, 
-  FiUsers, 
-  FiBell, 
-  FiLogOut, 
-  FiMoreVertical, 
-  FiGrid, 
+import {
+  FiHome,
+  FiGlobe,
+  FiBookOpen,
+  FiUsers,
+  FiBell,
+  FiLogOut,
+  FiMoreVertical,
+  FiGrid,
   FiMessageSquare,
   FiAward,
   FiUser,
-  FiSettings
+  FiSettings,
+  FiMic
 } from 'react-icons/fi'
 
 interface MenuLayoutProps {
@@ -144,7 +145,7 @@ export default function MenuLayout({ children }: MenuLayoutProps) {
             </div>
 
             {/* Notificaciones */}
-            <div 
+            <div
               className={`${location.pathname === '/notification' ? 'bg-slate-800/80 text-white ring-1 ring-slate-700' : ''} text-white/90 text-base font-medium flex items-center gap-4 cursor-pointer hover:bg-slate-800/70 p-3 rounded-xl transition-all duration-200 hover:translate-x-2 hover:text-white`}
               onClick={() => nav('/notification')}
             >
@@ -152,6 +153,17 @@ export default function MenuLayout({ children }: MenuLayoutProps) {
                 <FiBell className="text-xl text-rose-400" aria-hidden="true"/>
               </div>
               <span>Notificaciones</span>
+            </div>
+
+            {/* Voz a Seña */}
+            <div
+              className={`${location.pathname === '/voz-a-sena' ? 'bg-slate-800/80 text-white ring-1 ring-slate-700' : ''} text-white/90 text-base font-medium flex items-center gap-4 cursor-pointer hover:bg-slate-800/70 p-3 rounded-xl transition-all duration-200 hover:translate-x-2 hover:text-white`}
+              onClick={() => nav('/voz-a-sena')}
+            >
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <FiMic className="text-xl text-orange-400" aria-hidden="true"/>
+              </div>
+              <span>Voz a Seña</span>
             </div>
           </div>
 
